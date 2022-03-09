@@ -1,3 +1,8 @@
+### This code file has two sections #####
+### Section 1 includes all auxiliary functions for MCMC implementation of the main model ######
+### Section 2 contains the main function for MCMC implementation of the model #####
+
+### Section 1: This section contains auxiliary functions to implement the methods ####
 #### auxiliary functions ####
 getouter <- function(bet,j=NULL){
     idx <- setdiff(1:ncol(bet),j)
@@ -33,7 +38,7 @@ rmse <- function(a, b) return(sqrt(mean((a - b)^2)))
 
 logsum <- function(lx) return(max(lx) + log(sum(exp(lx - max(lx)))))
 
-#### function to implement Bayesian tensor regression (Guhaniyogi et al., 2017, JMLR) ####
+#### Section 2: function to implement Bayesian tensor regression (Guhaniyogi et al., 2017, JMLR) ####
 
 tensor.reg <- function(z.train, x.train, y.train, nsweep, rank, burn = 0.30, nskip = 3, a.lam, b.lam, phi.alpha, scale = TRUE) {
     library(plyr)
