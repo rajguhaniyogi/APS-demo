@@ -137,6 +137,14 @@ BSTRR_2d_cont <- function(Y,X1,X2,X3,R){
        a.ghap[r] <- 1
        b.ghap[r] <- r^(eta)
     }
+    
+    seq.indx <- c(0,0)
+   for(i in 1:(V-1)){
+      for(j in (i+1):V){
+       seq.indx <- rbind(seq.indx,c(i,j))
+      }
+   }
+   seq.indx <- seq.indx[-1,]
 
     ## Initialize ##
 
