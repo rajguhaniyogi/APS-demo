@@ -14,29 +14,12 @@ library(doParallel)
 library(foreach)
 
 ## Simulated Data
-n <- 10500 ## sample size
-coords <- cbind(runif(n,0,1), runif(n,0,1)) ## simulated co-ordinates
-X <- as.matrix(cbind(1, rnorm(n))) ## covariate matrix
-colnames(X) <- c("x.1", "x.2")
-Z <- t(bdiag(as.list(as.data.frame(t(X))))) ## covariates with varying coefficients
-B <- as.matrix(c(1,5)) ## fixed coefficients
-p <- length(B)  
-sigma.sq <- c(1,5) 
-tau.sq <- 1 ## error variance
-phi <- 3/0.5 
-D <- as.matrix(dist(coords))
-C <- exp(-phi*D)%*%diag(sigma.sq)
-w <- rmvn(1, rep(0,p*n), C)
-mu <- as.vector(X%*%B + Z%*%w)
-y <- rnorm(n, mu, sqrt(tau.sq)) ## simulated response vector
-
-## Simulated Data
-load("SimulatedTemps.RData")  
-na.obs <- which(is.na(sim.data$Temp))
+## load("SimulatedTemps.RData")  
+## na.obs <- which(is.na(sim.data$Temp))
 ## Training Data
-dat.nomiss <- cbind(sim.data$Lon[-na.obs],sim.data$Lat[-na.obs],sim.data$Temp[-na.obs]) 
+## dat.nomiss <- cbind(sim.data$Lon[-na.obs],sim.data$Lat[-na.obs],sim.data$Temp[-na.obs]) 
 ## Test Data 
-dat.miss <- cbind(sim.data$Lon[na.obs],sim.data$Lat[na.obs],sim.data$Temp[na.obs])  
+## dat.miss <- cbind(sim.data$Lon[na.obs],sim.data$Lat[na.obs],sim.data$Temp[na.obs])  
 
 
 ## Useful Quantities
@@ -57,7 +40,7 @@ mcmc.sample <- 2000
 n.burn <- 0.5*mcmc.sample  
 ## Divide predicted data and predict them
 ## independently in each subset
-p.sub <- c(0,seq(1000,44000,by=1000),n.test)  
+## p.sub <- c(0,seq(1000,44000,by=1000),n.test)  
 
 ## GP regression on data subsets
 
@@ -112,10 +95,9 @@ partitioned_GP <- function(i){
   CC <- coords.part[[i]]  
 
   ## GP computation in each subset
-  n.samples <- 2000
-  m.1 <- spSVC(ZZ~XX-1, coords=CC, starting=starting, svc.cols=c(1,2),
-               tuning=tuning, priors=priors, cov.model=cov.model,
-               n.samples=n.samples, n.omp.threads=4)           
+  m.1 <- spLM(ZZ~XX-1, coords=CC, starting=starting,
+              tuning=tuning, priors=priors.1, cov.model=cov.model,
+              n.samples=mcmc.sample,verbose=FALSE)           
   ## Recover all MCMC samples in each subset
   m.1.samp <- spRecover(m.1, start=n.burn+1, verbose=FALSE)  
   ## List of MCMC iterates from subset i
@@ -161,52 +143,33 @@ stopCluster(cl)
 subAtomList <- list()
 for(i in 1:length(n.part)){
   ## MCMC samples to run Weiszfeld algorithm
-  subAtomList[[i]] <- obj[[i]]$atoms[seq(1,mcmc.sample-n.burn,10),] 
+  subAtomList[[i]] <- obj[[i]]$atoms
 }
-beg.rec <- Sys.time()
-## PIE comination (combining marginal subset posteriors)
-medPosterior <- findWeiszfeldMedian(subAtomList, sigma = 0.1, maxit = 100, tol = 1e-5) 
-## Posterior wts. using Weiszfeld's algorithm
-wts <- medPosterior$weiszfeldWts  
-## Time for combining subset posteriors
-recomb.time <- Sys.time()-beg.rec 
+low.quant <- 0.025
+mid.quant <- 0.5
+upp.quant <- 0.975
+quant.low.atoms <- matrix(NA,length(n.part),ncol(subAtomList[[1]]))
+quant.med.atoms <- matrix(NA,length(n.part),ncol(subAtomList[[1]]))
+quant.upp.atoms <- matrix(NA,length(n.part),ncol(subAtomList[[1]]))
+for(i in 1:length(n.part)){
+  quant.low.atoms[i,] <- apply(subAtomList[[i]],2,quantile,low.quant)
+  quant.med.atoms[i,] <- apply(subAtomList[[i]],2,quantile,mid.quant)
+  quant.upp.atoms[i,] <- apply(subAtomList[[i]],2,quantile,upp.quant)
+}  
+low.quant.combined <- colMeans(quant.low.atoms) ## 2.5% quantile
+med.quant.combined <- colMeans(quant.med.atoms) ## median
+upp.quant.combined <- colMeans(quant.upp.atoms) ## 97.5% quantile
 
 ####### Prediction ################ 
-Y.med <- numeric()
-Y.lower_qnt <- numeric()
-Y.upper_qnt <- numeric()
-beg <- Sys.time()
-## Number of posterior predictive samples
-n.pred.sample <- nrow(obj[[1]]$predictions) 
 
-for(j in 1:ncol(obj[[1]]$predictions)){
-  ## Posterior predictive samples for j th predicted point from first subsample
-  a.sub.i<- obj[[1]]$predictions[,j]    
-  a.wts <- wts[1]*rep(1/n.pred.sample,n.pred.sample)
-  for(i in 2:n.split){
-     ## Posterior predictive samples for j th predicted point from i th subsample
-     a.sub.i <- c(a.sub.i,obj[[i]]$predictions[,j])  
-     ## Corresponding empirical weights
-     a.wts <- c(a.wts, wts[i]*rep(1/n.pred.sample,n.pred.sample)) 
-  }
-  new.atom <- sort(a.sub.i,decreasing=F,index.return=T)$ix
-  ## MCMC samples for the meta posterior
-  atoms <- a.sub.i[new.atom]
-  ## Corresponding weights  
-  prob <- a.wts[new.atom]     
-  id11 <- min(which(cumsum(prob)>=0.025))
-  id12 <- min(which(cumsum(prob)>=0.975))
-  id13 <- min(which(cumsum(prob)>=0.5))
-  ## Posterior 2.5% quantile for j th predicted point
-  Y.lower_qnt[j] <- atoms[id11]     
-  ## Posterior 97.5% quantile for j th predicted point      
-  Y.upper_qnt[j] <- atoms[id12] 
-  ## Posterior median for j th predicted point           
-  Y.med[j] <- atoms[id13]                
-}
-
-## Time for calculating quantiles
-quantile.calculation.time <- Sys.time()-beg  
-
-## Total time for subset running, combining subset posteriors and calculating quantiles
-Time <- final.time+recomb.time+quantile.calculation.time 
+quant.low.atoms <- matrix(NA,length(n.part),ncol(obj[[1]]$predictions))
+quant.med.atoms <- matrix(NA,length(n.part),ncol(obj[[1]]$predictions))
+quant.upp.atoms <- matrix(NA,length(n.part),ncol(obj[[1]]$predictions))
+for(i in 1:length(n.part)){
+  quant.low.atoms[i,] <- apply(obj[[i]]$predictions,2,quantile,low.quant)
+  quant.med.atoms[i,] <- apply(obj[[i]]$predictions,2,quantile,mid.quant)
+  quant.upp.atoms[i,] <- apply(obj[[i]]$predictions,2,quantile,upp.quant)
+}  
+Y.lower_qnt <- colMeans(quant.low.atoms) ## 2.5% quantile
+Y.med       <- colMeans(quant.med.atoms) ## median
+Y.upper_qnt <- colMeans(quant.upp.atoms) ## 97.5% quantile
