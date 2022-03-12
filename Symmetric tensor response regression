@@ -176,7 +176,7 @@ BSTRR_2d_cont <- function(Y,X1,X2,X3,R,niter=2000){
     beta2[1] <- true.b2
     beta3[1] <- true.b3
     pi[1] <- 0.5
-    M[[1]] <- riwish(a.wish,S.scale)
+    M[[1]] <- rinvwishart(a.wish,S.scale)
     
     ## Each of the 'niter' no. of matrices in the list represents u1,u2,u3,...,uV. (Each of the u's is of dimension R.)
     ulist[[1]] <- matrix(rnorm(V*R,0,1),nrow=V,ncol=R)
