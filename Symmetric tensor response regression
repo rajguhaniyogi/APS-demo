@@ -89,8 +89,8 @@ for(rep in 1:n.rep){
    response[[rep]]  <- array(NA,dim=c(N,V,V))    ## response 
    for(count in 1:N){
      hhh <- matrix(NA,V,V)
-     upperTriangle(hhh,diag=F,byrow=T)<- y
-     lowerTriangle(hhh,diag=F)<- y
+     upperTriangle(hhh,diag=F,byrow=T)<- y[count,]
+     lowerTriangle(hhh,diag=F)<- y[count,]
      diag(hhh)<- rep(0,V)
      response[[rep]][count,,] <- hhh
    }  
