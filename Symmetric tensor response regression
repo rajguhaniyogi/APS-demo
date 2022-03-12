@@ -114,7 +114,7 @@ BSTRR_2d_cont <- function(Y,X1,X2,X3,R,niter=2000){
     library(gdata)
     library(GIGrvg)
     library(mvtnorm)
-    library(MCMCpack)
+    #library(MCMCpack)
  
     N    <- length(X1)           ## Sample size
     V    <- dim(Y)[2]
