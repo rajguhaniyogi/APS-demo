@@ -339,7 +339,7 @@ BSTRR_2d_cont <- function(Y,X1,X2,X3,R,niter=2000){
     for(j in 1:V){ 
     	U.U <- U.U+tcrossprod(ulist[[i]][j,])
     }
-    M[[i]] <- riwish(a.wish+len.nonzero.ui,S.scale+U.U)  
+    M[[i]] <- rinvwishart(a.wish+len.nonzero.ui,S.scale+U.U)  
     }  
     results <- list(W1,kappa,beta0,beta2,beta3,sigma,rn.gen)
     names(results) <- c("W1","kappa","beta0","beta2","beta3","sigma","indic.latvar")
