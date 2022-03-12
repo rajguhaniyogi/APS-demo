@@ -13,7 +13,7 @@ library(parallel)
 library(doParallel)
 library(foreach)
 
-## Simulated Data  
+## Section 1: Simulate spatial data
 set.seed(1)
 samp.size <- 3000
 train.size <- 2000
@@ -32,7 +32,7 @@ dat.nomiss <- cbind(x.co[1:train.size],y.co[1:train.size],c(Y)[1:train.size])
 ## Test Data 
 dat.miss <- cbind(x.co[(train.size+1):samp.size],y.co[(train.size+1):samp.size],c(Y)[(train.size+1):samp.size])
 
-
+#### Section 2: Implement the distributed spatial inference
 ## Useful Quantities
 ## Total number of training samples
 n.sample <- nrow(dat.nomiss)
