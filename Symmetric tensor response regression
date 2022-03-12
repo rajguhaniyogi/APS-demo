@@ -106,7 +106,7 @@ for(rep in 1:n.rep){
 ## Section 2: Function to implement Bayesian Symmetric tensor response regression ##
 ####################################################################################
 
-BSTRR_2d_cont <- function(Y,X1,X2,X3,R,niter=15000){
+BSTRR_2d_cont <- function(Y,X1,X2,X3,R,niter=2000){
     library(R.matlab)
     library(pscl)
     library(LaplacesDemon)
