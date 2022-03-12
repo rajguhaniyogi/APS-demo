@@ -13,13 +13,24 @@ library(parallel)
 library(doParallel)
 library(foreach)
 
-## Simulated Data
-## load("SimulatedTemps.RData")  
-## na.obs <- which(is.na(sim.data$Temp))
+## Simulated Data  
+set.seed(1)
+samp.size <- 6000
+train.size <- 5000
+x.co <- runif(samp.size, 0, 1)
+y.co <- runif(samp.size, 0, 1)
+D <- as.matrix(dist(cbind(x, y)))
+phi <- 2
+sigmasq <- 1
+tausq <- 0.1
+mu <- 0.5
+mat <- (sigmasq*exp(-phi*D))
+w <- rmvn(1, rep(0, samp.size), mat)
+Y <- rmvn(1, rep(mu, samp.size) + w, tausq*diag(samp.size))
 ## Training Data
-## dat.nomiss <- cbind(sim.data$Lon[-na.obs],sim.data$Lat[-na.obs],sim.data$Temp[-na.obs]) 
+dat.nomiss <- cbind(x.co[1:train.size],y.co[1:train.size],c(Y)[1:train.size]) 
 ## Test Data 
-## dat.miss <- cbind(sim.data$Lon[na.obs],sim.data$Lat[na.obs],sim.data$Temp[na.obs])  
+dat.miss <- cbind(x.co[(train.size+1):samp.size],y.co[(train.size+1):samp.size],c(Y)[(train.size+1):samp.size])
 
 
 ## Useful Quantities
