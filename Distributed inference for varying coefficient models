@@ -15,8 +15,8 @@ library(foreach)
 
 ## Simulated Data  
 set.seed(1)
-samp.size <- 6000
-train.size <- 5000
+samp.size <- 3000
+train.size <- 2000
 x.co <- runif(samp.size, 0, 1)
 y.co <- runif(samp.size, 0, 1)
 D <- as.matrix(dist(cbind(x.co, y.co)))
@@ -39,19 +39,12 @@ n.sample <- nrow(dat.nomiss)
 ## Total number of test samples 
 n.test <- nrow(dat.miss)  
 ## Number of cores or subsets
-n.core <- 30  
+n.core <- 10  
 per.core <- floor(nrow(dat.nomiss)/n.core) 
 ## Number of observations in different subsets
 n.part <- c(rep(per.core,n.core-1),n.sample-per.core*(n.core-1))  
 ## This is same as n.core
-n.split <- length(n.part) 
-## Number of MCMC iterations
-mcmc.sample <- 2000 
-## Burn in 
-n.burn <- 0.5*mcmc.sample  
-## Divide predicted data and predict them
-## independently in each subset
-## p.sub <- c(0,seq(1000,44000,by=1000),n.test)  
+n.split <- length(n.part)  
 
 ## GP regression on data subsets
 
@@ -82,6 +75,9 @@ for(i in 1:n.split){
   coords.part[[i]] <- coords.train[index.part[[i]],]  
   a <- setdiff(a,index.part[[i]])
 }
+## Divide predicted data and predict them
+## independently in each subset
+ p.sub <- c(0,seq(200,n.test,by=200)) 
 
 ##########################################
 ##Partitioned GP function
@@ -98,6 +94,10 @@ partitioned_GP <- function(i){
                    "phi.Unif"=c(3/10, 3/0.1), "sigma.sq.IG"=c(2, 2),
                    "tau.sq.IG"=c(2, 0.1))
   cov.model <- "exponential"
+  ## Number of MCMC iterations
+  mcmc.sample <- 2000 
+  ## Burn in 
+  n.burn <- 0.5*mcmc.sample  
   ## Response in subset i
   ZZ <- Y.part[[i]]   
   ## Predictor in subset i    
