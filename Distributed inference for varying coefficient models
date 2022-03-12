@@ -19,7 +19,7 @@ samp.size <- 6000
 train.size <- 5000
 x.co <- runif(samp.size, 0, 1)
 y.co <- runif(samp.size, 0, 1)
-D <- as.matrix(dist(cbind(x, y)))
+D <- as.matrix(dist(cbind(x.co, y.co)))
 phi <- 2
 sigmasq <- 1
 tausq <- 0.1
