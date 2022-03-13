@@ -12,6 +12,7 @@ library(Mposterior)
 library(parallel)
 library(doParallel)
 library(foreach)
+library(mgcv)
 
 ## Section 1: Simulate spatial data
 set.seed(1)
